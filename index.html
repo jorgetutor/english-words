@@ -1,0 +1,202 @@
+<head>
+  <title>English Words</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.4.2/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <style media="screen">
+    * {
+      line-height: 2em;
+      box-sizing: border-box;
+      font-family: arial;
+    }
+    body {
+      padding: 0.5em;
+      background: #111;
+      color: white;
+    }
+    h1 {
+      margin: 0em;
+      text-transform: capitalize;
+    }
+    audio {
+      width: 100%;
+      margin:10px;
+    }
+    a.reload-btn {
+      border: 1px solid #999;
+      padding: 1em;
+      width: 100%;
+      display: block;
+      text-align: center;
+      background-color: #333;
+      border-radius: 30px;
+      margin:10px;
+    }
+    a.reload-btn:hover {
+      border: 2px solid #999;
+    }
+
+    ul {
+      margin:0 0 2em 0;
+      padding-left:0;
+      list-style-type: none;
+    }
+
+    ul ul {
+      margin:0 0 1em 0;
+      padding-left:1em;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <h1>{{ word }}</h1>
+    <div>
+      <em>{{ word_pr }}</em>
+    </div>
+
+    <ul v-if="definitions.length">
+      <li v-for="item in definitions">
+        <em>{{ item.type }}</em>
+        <ul>
+          <li v-for="definition in item.definitions">{{ definition }} </li>
+        </ul>
+      </li>
+    </ul>
+
+    <audio id="audio" controls v-if="word_audio && word_audio.length">
+      <source id="audio-source" v-bind:src="word_audio" type="audio/ogg">
+      Your browser does not support the audio element.
+    </audio>
+
+    <div>
+      <a v-on:click="reloadWord" class="reload-btn">New word</a>
+    </div>
+
+  </div>
+  <script type="text/javascript">
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiKey = urlParams.get('apiKey');
+
+    const app = new Vue({
+      el: '#app',
+      data: {
+        words: [],
+        word: '',
+        definitions: [],
+        word_pr : '',
+        word_audio: null,
+        dictionary: []
+      },
+      created () {
+        // Load words:
+        var url = 'words.txt';
+        axios.get(url)
+          .then(response => {
+
+            var array = response.data.split("\n");
+
+            var filtered = array.filter(function (el) {
+              return el != null && el.length > 0;
+            });
+
+            this.words = filtered;
+            this.reloadWord();
+          });
+      },
+      methods: {
+        reloadWord: function (event) {
+          const idx = Math.floor(Math.random() * this.words.length);
+          this.word = this.words[idx];
+          var url = 'https://www.dictionaryapi.com/api/v3/references/sd3/json/' + this.word + '?key=' + apiKey;
+          axios.get(url)
+            .then(response => {
+              // @TODO response code!
+              var api = response.data;
+
+              if (typeof(api) !== 'undefined' && typeof(api[0].fl) !== 'undefined') {
+
+                var items = {};
+                response.data.forEach(
+                  element => {
+                    // init type
+                    if (typeof(element.fl) !== 'undefined') {
+                      if (typeof(items[element.fl]) == 'undefined') {
+                        items[element.fl] = {
+                          'type': element.fl,
+                          'definitions': element.shortdef
+                        }
+                      }
+                      else {
+                        items[element.fl].definitions = items[element.fl].definitions.concat(element.shortdef);
+                      }
+                    }
+                  }
+                );
+
+                var itemsa = [];
+                Object.values(items).forEach(val => {
+                  itemsa.push(val);
+                });
+
+                this.definitions = itemsa;
+
+                this.word_fl = api[0].fl;
+                this.word_pr = api[0].hwi.prs[0].mw;
+
+                var audio_url = '';
+
+                if (typeof(api[0].hwi) !== 'undefined' && typeof(api[0].hwi.prs) !== 'undefined' && typeof(api[0].hwi.prs[0]) !== 'undefined' && typeof(api[0].hwi.prs[0].sound) !== 'undefined') {
+                  var audio = api[0].hwi.prs[0].sound.audio;
+                  if (audio.length) {
+                    var subdirectory = '';
+                    // if audio begins with "bix", the subdirectory should be "bix",
+                    // if audio begins with "gg", the subdirectory should be "gg",
+                    // if audio begins with a number or punctuation (eg, "_"), the subdirectory should be "number",
+                    // otherwise, the subdirectory is equal to the first letter of audio.
+                    if (audio.startsWith('bix')) {
+                      subdirectory = 'bix';
+                    }
+                    else if (audio.startsWith('gg')) {
+                      subdirectory = 'gg';
+                    }
+                    else if (audio.startsWith('_')) {
+                      subdirectory = 'number';
+                    }
+                    else {
+                      subdirectory = audio[0];
+                    }
+
+                    var language_code = 'en';
+                    var country_code = 'us';
+                    var format = 'ogg';
+                    audio_url = 'https://media.merriam-webster.com/audio/prons/' + language_code + '/' + country_code + '/' + format + '/' + subdirectory + '/' + audio + '.' + format;
+                  }
+
+                }
+
+                this.word_audio = audio_url;
+                if (audio_url.length > 0) {
+                  var audioplayer = document.getElementById('audio');
+                  // Preload the audio without playing
+                  audioplayer.load();
+                  // audio.play();
+                }
+
+              }
+              else {
+                // Reset ALL:
+                this.word_fl = '';
+                this.word_pr = '';
+                this.word_audio = '';
+                this.definitions = [];
+              }
+
+            });
+        }
+      }
+    });
+  </script>
+</body>
