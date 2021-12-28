@@ -5,17 +5,17 @@
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;1,200&display=swap">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;1,200&display=swap" rel="stylesheet"> 
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
   <style media="screen">
     html {
       font-size: 13px;
     }
     body {
-      padding: 0.5em;
-      background: #111;
       font-family: 'Montserrat', sans-serif;
-      color: white;
     }
     h1 {
       text-transform: capitalize;
@@ -25,47 +25,38 @@
       margin:10px;
     }
 
-    ul {
-      margin:0 0 2em 0;
-      padding-left:0;
-      list-style-type: none;
-    }
-
-    ul ul {
-      margin:0 0 1em 0;
-      padding-left:1em;
-    }
-
   </style>
 </head>
 <body>
   <div id="app" class="container p-3">
     <div class="row">
-      <div class="col-12">
-        <div class="row">
-          <div class="col-8"><h1>{{ word }}</h1></div>
-          <div class="col-4 text-end">
-            <a v-on:click="reloadWord" class="btn btn-primary"><i class="fa fa-file-o"></i>  Next</a>
-          </div>
-        </div>
+      <div class="col-12 text-center">
+        <h1> {{ word }}</h1>
       </div>
       <div class="col-12 text-center">
-        <audio id="audio" controls v-if="word_audio && word_audio.length">
-          <source id="audio-source" v-bind:src="word_audio" type="audio/ogg">
-          Your browser does not support the audio element.
-        </audio>
-        <em>{{ word_pr }}</em>
+        <div class="row mb-3">
+          <div class="col-12 col-md-6">
+            <audio id="audio" controls v-if="word_audio && word_audio.length">
+              <source id="audio-source" v-bind:src="word_audio" type="audio/ogg">
+              Your browser does not support the audio element.
+            </audio>
+          </div>
+          <div class="col-12 p-3" v-if="word_pr">{{ word_pr }}</div>
+          <div class="col-12">
+            <button type="button" class="btn btn-primary btn-lg" v-on:click="reloadWord"><i class="fa fa-refresh"></i> Reload</button></div>
+        </div>
       </div>
-    </div>
 
-    <ul v-if="definitions.length">
-      <li v-for="item in definitions">
-        <em>{{ item.type }}</em>
-        <ul>
-          <li v-for="definition in item.definitions">{{ definition }} </li>
-        </ul>
-      </li>
-    </ul>
+      <ul class="list-group" v-if="definitions.length">
+        <li class="list-group-item" v-for="item in definitions">
+          <em>{{ item.type }}</em>
+          <ol class="list-group list-group-numbered list-group-flush">
+            <li class="list-group-item" v-for="definition in item.definitions">{{ definition }} </li>
+          </ol>
+        </li>
+      </ul>
+      
+    </div>   
 
   </div>
   <script type="text/javascript">
@@ -99,7 +90,7 @@
           });
       },
       methods: {
-        reloadWord: function (event) {
+        reloadWord: function () {
           const idx = Math.floor(Math.random() * this.words.length);
           this.word = this.words[idx];
           var url = 'https://www.dictionaryapi.com/api/v3/references/sd3/json/' + this.word + '?key=' + apiKey;
@@ -136,7 +127,7 @@
                 this.definitions = itemsa;
 
                 this.word_fl = api[0].fl;
-                this.word_pr = api[0].hwi.prs[0].mw;
+                this.word_pr = typeof(api[0].hwi.prs[0]) !== 'undefined' ? api[0].hwi.prs[0].mw : null;
 
                 var audio_url = '';
 
@@ -184,6 +175,9 @@
                 this.word_pr = '';
                 this.word_audio = '';
                 this.definitions = [];
+                
+                // Try another Word:
+                this.reloadWord();
               }
 
             });
