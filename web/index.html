@@ -8,15 +8,13 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
   <style media="screen">
-
     html {
       font-size: 13px;
     }
     body {
-      font-family: 'Montserrat', sans-serif;
       padding: 0.5em;
       background: #111;
-      background: red;
+      font-family: 'Montserrat', sans-serif;
       color: white;
     }
     h1 {
@@ -26,33 +24,38 @@
       width: 100%;
       margin:10px;
     }
+
+    ul {
+      margin:0 0 2em 0;
+      padding-left:0;
+      list-style-type: none;
+    }
+
+    ul ul {
+      margin:0 0 1em 0;
+      padding-left:1em;
+    }
+
   </style>
 </head>
 <body>
-
-  <div >
+  <div id="app" class="container p-3">
     <div class="row">
-      <div class="col">
-        Column
+      <div class="col-12">
+        <div class="row">
+          <div class="col-8"><h1>{{ word }}</h1></div>
+          <div class="col-4 text-end">
+            <a v-on:click="reloadWord" class="btn btn-primary"><i class="fa fa-file-o"></i>  Next</a>
+          </div>
+        </div>
       </div>
-      <div class="col">
-        Column
+      <div class="col-12 text-center">
+        <audio id="audio" controls v-if="word_audio && word_audio.length">
+          <source id="audio-source" v-bind:src="word_audio" type="audio/ogg">
+          Your browser does not support the audio element.
+        </audio>
+        <em>{{ word_pr }}</em>
       </div>
-      <div class="col">
-        Column
-      </div>
-    </div>
-  </div>
-
-  <div id="app" class="container">
-    <div class="row">
-      <div class="col">
-        <h1>{{ word }}</h1>
-      </div>
-    </div>
-    
-    <div>
-      <em>{{ word_pr }}</em>
     </div>
 
     <ul v-if="definitions.length">
@@ -64,17 +67,7 @@
       </li>
     </ul>
 
-    <audio id="audio" controls v-if="word_audio && word_audio.length">
-      <source id="audio-source" v-bind:src="word_audio" type="audio/ogg">
-      Your browser does not support the audio element.
-    </audio>
-
-    <div>
-      <a v-on:click="reloadWord" class="btn reload-btn">Next</a>
-    </div>
-
   </div>
-
   <script type="text/javascript">
     const urlParams = new URLSearchParams(window.location.search);
     const apiKey = urlParams.get('apiKey');

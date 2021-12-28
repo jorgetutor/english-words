@@ -1,0 +1,12 @@
+version: "3.7"
+services:
+
+  apache:
+    image: wodby/apache:$APACHE_TAG
+    container_name: "${PROJECT_NAME}_apache"
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html/web
+    ports:
+      - 8080:80
+    volumes:
+    - ./:/var/www/html:cached
