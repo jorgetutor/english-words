@@ -32,29 +32,34 @@
     <div class="row">
       <div class="col-12 text-center">
         <h1> {{ word }}</h1>
+        <p v-if="word_pr">{{ word_pr }}</p>
       </div>
-      <div class="col-12 text-center">
-        <div class="row mb-3">
-          <div class="col-12 col-md-6">
-            <audio id="audio" controls v-if="word_audio && word_audio.length">
-              <source id="audio-source" v-bind:src="word_audio" type="audio/ogg">
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-          <div class="col-12 p-3" v-if="word_pr">{{ word_pr }}</div>
-          <div class="col-12">
+      <div class="row">
+        <div class="btn-group mb-3">
+            <button type="button" class="btn btn-secondary btn-lg" v-on:click="audioPlay" :disabled="!audioExists()"><i class="fa fa-play"></i> Play</button>
             <button type="button" class="btn btn-primary btn-lg" v-on:click="reloadWord"><i class="fa fa-refresh"></i> Reload</button></div>
         </div>
       </div>
 
-      <ul class="list-group" v-if="definitions.length">
-        <li class="list-group-item" v-for="item in definitions">
-          <em>{{ item.type }}</em>
-          <ol class="list-group list-group-numbered list-group-flush">
-            <li class="list-group-item" v-for="definition in item.definitions">{{ definition }} </li>
-          </ol>
-        </li>
-      </ul>
+      <div class="col-12">
+        <ul class="list-group" v-if="definitions.length">
+          <li class="list-group-item" v-for="item in definitions">
+            <em>{{ item.type }}</em>
+            <ol class="list-group list-group-numbered list-group-flush">
+              <li class="list-group-item" v-for="definition in item.definitions">{{ definition }} </li>
+            </ol>
+          </li>
+        </ul>
+      </div>
+
+      <div class="col-12 m-3">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" v-model="autoPlay" id="autoPlay">
+          <label class="form-check-label" for="autoPlay">
+            Auto play Sound
+          </label>
+        </div>
+      </div>
       
     </div>   
 
@@ -70,8 +75,9 @@
         word: '',
         definitions: [],
         word_pr : '',
-        word_audio: null,
-        dictionary: []
+        word_audio: "",
+        dictionary: [],
+        autoPlay: true,
       },
       created () {
         // Load words:
@@ -90,6 +96,25 @@
           });
       },
       methods: {
+        audioPlay() {
+          if (this.audioExists()) {
+            const audio = new Audio(this.word_audio);
+            
+            audio.addEventListener('loadeddata', () => {
+              let duration = audio.duration;
+              if (audio.duration === 0) {
+                this.word_audio = "";
+              }
+              else {
+                audio.play();
+              }
+            });
+            audio.load();
+          }
+        },
+        audioExists() {
+          return this.word_audio.length > 0;
+        },
         reloadWord: function () {
           const idx = Math.floor(Math.random() * this.words.length);
           this.word = this.words[idx];
@@ -127,7 +152,7 @@
                 this.definitions = itemsa;
 
                 this.word_fl = api[0].fl;
-                this.word_pr = typeof(api[0].hwi.prs[0]) !== 'undefined' ? api[0].hwi.prs[0].mw : null;
+                this.word_pr = typeof(api[0].hwi) !== 'undefined'&& typeof(api[0].hwi.prs) !== 'undefined' && typeof(api[0].hwi.prs[0]) !== 'undefined' ? api[0].hwi.prs[0].mw : null;
 
                 var audio_url = '';
 
@@ -161,11 +186,8 @@
                 }
 
                 this.word_audio = audio_url;
-                if (audio_url.length > 0) {
-                  var audioplayer = document.getElementById('audio');
-                  // Preload the audio without playing
-                  audioplayer.load();
-                  // audio.play();
+                if (this.autoPlay) {
+                  this.audioPlay();
                 }
 
               }
